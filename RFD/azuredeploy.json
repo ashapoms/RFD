@@ -79,7 +79,7 @@
     "vnetID": "[resourceId('Microsoft.Network/virtualNetworks',variables('networkSettings').virtualNetworkName)]",
     "subnetRef": "[concat(variables('vnetID'),'/subnets/',variables('networkSettings').subnet.dse.name)]",
     "sshKeyPath": "[concat('/home/',parameters('adminUsername'),'/.ssh/authorized_keys')]",
-    "templateBaseUrl": "https://github.com/ahriman-ru/azure-quickstart-templates/tree/master/torque-cluster",
+    "templateBaseUrl": "https://raw.githubusercontent.com/ashapoms/RFD/master/RFD",
     "installationCLI": "[concat('sh azuredeploy.sh ', variables('masterVMName'), ' ', variables('networkSettings').statics.master, ' ', variables('workerVMName'), ' ', variables('networkSettings').statics.workerRange.base, ' ', variables('networkSettings').statics.workerRange.start, ' ', parameters('scaleNumber'), ' ', parameters('adminUsername'), ' ', parameters('adminPassword'), ' ', variables('templateBaseUrl'))]",
     "storageAccountType": "Standard_LRS"
   },
