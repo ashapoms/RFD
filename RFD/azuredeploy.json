@@ -300,7 +300,7 @@
       "type": "string"
     },
     "masterIpAddress": {
-      "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses', variables('publicIPAddressName')))]",
+      "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses', variables('publicIPAddressName')), 'Full')]",
       "type": "object"
     }
   }
