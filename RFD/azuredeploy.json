@@ -296,7 +296,7 @@
   ],
   "outputs": {
     "MasterFqdn": {
-      "value": "[reference(parameters('dnsName')).dnsSettings.fqdn]",
+      "value": "[reference(variables('publicIPAddressName')).dnsSettings.fqdn]",
       "type": "string"
     },
     "MasterIpAddress": {
