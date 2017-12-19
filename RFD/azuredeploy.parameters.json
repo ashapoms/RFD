@@ -3,16 +3,16 @@
   "contentVersion": "1.0.0.0",
   "parameters": {
     "dnsName": {
-      "value": "GEN-UNIQUE-8"
+      "value": "ashapoms201"
     },
     "newStorageAccountName": {
-      "value": "GEN-UNIQUE-8"
+      "value": "ashapomssa201"
     },
     "adminUsername": {
-      "value": "azureuser"
+      "value": "azureadmin"
     },
     "adminPassword": {
-      "value": "GEN-PASSWORD"
+      "value": "P@ssw0rd!@#$%"
     },
     "vmSize": {
       "value": "Standard_D1"
