@@ -299,7 +299,7 @@
       "value": "[reference(parameters('dnsName')).dnsSettings.fqdn]",
       "type": "string"
     },
-    "MasterIpaddress": {
+    "MasterIpAddress": {
       "value": "[reference(variables('publicIPAddressName')).ipAddress]",
       "type": "string"
     }
