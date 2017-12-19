@@ -26,6 +26,8 @@ New-AzureRmResourceGroupDeployment -Name $RFDDeploymentName `
                                        -TemplateParameterUri $TemplateParameterUri `
                                        -Verbose 
 
+# Remove-AzureRmResourceGroup -Name $ResourceGroupName -Verbose -Force
+
 
 
 # $TemplateFile = "C:\Users\ashapo\Work Folders\DPE\VS\OpenArm\open-wb\open-wb-infra\open-wb-infra\openwbVMs.json"

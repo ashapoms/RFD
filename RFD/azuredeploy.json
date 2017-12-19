@@ -304,7 +304,7 @@
       "value": "[reference(variables('publicIPAddressName'), '2015-05-01-preview', 'Full')]"
     },
     "masterIpAddress": {
-      "value": "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIPAddressName')]",
+      "value": "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIPAddressName'))]",
       "type": "string"
     }
   }
