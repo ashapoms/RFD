@@ -293,5 +293,15 @@
         }
       }
     }
-  ]
+  ],
+  "outputs": {
+    "MasterFqdn": {
+      "value": "[reference(parameters('dnsName')).dnsSettings.fqdn]",
+      "type": "string"
+    },
+    "MasterIpaddress": {
+      "value": "[reference(variables('publicIPAddressName')).ipAddress]",
+      "type": "string"
+    }
+  }
 }
