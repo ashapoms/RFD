@@ -298,10 +298,6 @@
     "MasterFqdn": {
       "value": "[reference(variables('publicIPAddressName')).dnsSettings.fqdn]",
       "type": "string"
-    },
-    "MasterIpAddress": {
-      "value": "[reference(variables('publicIPAddressName')).ipAddress]",
-      "type": "string"
     }
   }
 }
