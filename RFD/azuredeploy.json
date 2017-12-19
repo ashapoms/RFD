@@ -301,7 +301,7 @@
     },
     "masterIpAddress": {
       "value": "[reference(resourceId('Microsoft.Network/publicIPAddresses/publicips'))]",
-      "type": "string"
+      "type": "object"
     }
   }
 }
