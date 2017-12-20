@@ -156,9 +156,6 @@
       "apiVersion": "2015-01-01",
       "type": "Microsoft.Resources/deployments",
       "name": "updateMasterNic",
-      "dependsOn": [
-        "[concat('Microsoft.Network/publicIPAddresses/', variables('publicIPAddressName'))]"
-      ],
       "properties": {
         "mode": "Incremental",
         "parameters": {},
