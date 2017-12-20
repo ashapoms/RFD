@@ -176,12 +176,12 @@
               "properties": {
                 "ipConfigurations": [
                   {
-                    "name": "[reference('nic').ipConfigurations[0].name)]",
+                    "name": "[reference('nic').ipConfigurations[0].name]",
                     "properties": {
-                      "privateIPAllocationMethod": "[reference('nic').ipConfigurations[0].properties.privateIPAllocationMethod)]",
-                      "privateIPAddress": "[reference('nic').ipConfigurations[0].properties.privateIPAddress)]",
+                      "privateIPAllocationMethod": "[reference('nic').ipConfigurations[0].properties.privateIPAllocationMethod]",
+                      "privateIPAddress": "[reference('nic').ipConfigurations[0].properties.privateIPAddress]",
                       "subnet": {
-                        "id": "[reference('nic').ipConfigurations[0].properties.subnet.id)]"
+                        "id": "[reference('nic').ipConfigurations[0].properties.subnet.id]"
                       },
                       "publicIPAddress": {
                         "id": "[resourceId('Microsoft.Network/publicIPAddresses','publicips')]"
