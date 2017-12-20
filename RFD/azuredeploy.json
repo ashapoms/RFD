@@ -300,7 +300,7 @@
       "type": "string"
     },
     "networkInterface": {
-      "type": "string",
+      "type": "object",
       "value": "[reference(concat(variables('nicName'))).ipConfigurations[0].properties.publicIPAddress]"
     }
   }
