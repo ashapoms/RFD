@@ -153,9 +153,12 @@
       }
     },
     {
-      "apiVersion": "2017-05-10",
+      "apiVersion": "2015-01-01",
       "type": "Microsoft.Resources/deployments",
       "name": "updateMasterNic",
+      "dependsOn": [
+        "[concat('Microsoft.Network/publicIPAddresses/', variables('publicIPAddressName'))]"
+      ],
       "properties": {
         "mode": "Incremental",
         "parameters": {},
@@ -173,20 +176,20 @@
               "properties": {
                 "ipConfigurations": [
                   {
-                    "name": "[reference(variables('nicName').ipConfigurations[0].name)]",
+                    "name": "[reference('nic').ipConfigurations[0].name)]",
                     "properties": {
-                      "privateIPAllocationMethod": "[reference(variables('nicName').ipConfigurations[0].properties.privateIPAllocationMethod)]",
-                      "privateIPAddress": "[reference(variables('nicName').ipConfigurations[0].properties.privateIPAddress)]",
+                      "privateIPAllocationMethod": "[reference('nic').ipConfigurations[0].properties.privateIPAllocationMethod)]",
+                      "privateIPAddress": "[reference('nic').ipConfigurations[0].properties.privateIPAddress)]",
                       "subnet": {
-                        "id": "[reference(variables('nicName').ipConfigurations[0].properties.subnet.id)]"
+                        "id": "[reference('nic').ipConfigurations[0].properties.subnet.id)]"
                       },
                       "publicIPAddress": {
-                        "id": "[resourceId('Microsoft.Network/publicIPAddresses',variables('publicIPAddressName'))]"
+                        "id": "[resourceId('Microsoft.Network/publicIPAddresses','publicips')]"
                       }
                     }
                   }
                 ]
-              }
+              } 
             }
           ],
           "outputs": {}
