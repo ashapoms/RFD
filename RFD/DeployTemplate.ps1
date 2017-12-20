@@ -4,8 +4,8 @@
 # The script creates resource group and deploy ARM template
 #
 
-$aadpass = ConvertTo-SecureString "DMSVonashu26.@3!" -AsPlainText -Force
-$aadcred = New-Object System.Management.Automation.PSCredential ("admin@contosomsspb.onmicrosoft.com", $aadpass)
+$aadpass = ConvertTo-SecureString "<subscription_admin_password>" -AsPlainText -Force
+$aadcred = New-Object System.Management.Automation.PSCredential ("<admin_name>@<tenant_name>.onmicrosoft.com", $aadpass)
 
 #Add-AzureRmAccount
 Login-AzureRmAccount -Credential $aadcred
