@@ -25,17 +25,12 @@
   <Import Condition=" Exists('$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Deployment\1.1\DeploymentProject.targets') " Project="$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Deployment\1.1\DeploymentProject.targets" />
   <!-- vertag<:>end -->
   <ItemGroup>
-    <Content Include="Currentazuredeploy.json" />
     <Content Include="azuredeploy.parameters.json" />
     <None Include="azuredeploy.json" />
     <None Include="azuredeploy.sh" />
     <None Include="Deployment.targets">
       <Visible>False</Visible>
     </None>
-    <None Include="DeployTemplate.ps1" />
-    <None Include="multipleVMs.json" />
-    <None Include="openwbVMs.json" />
-    <None Include="openwbVMs.parameters.json" />
   </ItemGroup>
   <Target Name="GetReferenceAssemblyPaths" />
 </Project>
