@@ -358,8 +358,8 @@
       "type": "string"
     },
     "masterIPAddress": {
-      "type": "object",
-      "value": "[reference(concat(variables('masterVMNicName'))).ipConfigurations[0].properties.publicIPAddress]"
+      "type": "string",
+      "value": "[reference(variables('publicIPAddressName')).IpAddress]"
     }
   }
 }
