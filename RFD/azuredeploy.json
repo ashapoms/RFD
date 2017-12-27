@@ -131,7 +131,7 @@
         "master": "10.0.0.254"
       }
     },
-    "storageAccountName": "[concat(uniquestring(resourceGroup().id), 'bdsa01')]",
+    "storageAccountName": "[concat(uniquestring(resourceGroup().id), 'sa01')]",
     "publicIPAddressName": "[concat(parameters('masterVMName'), '-ip01')]",
     "vnetId": "[resourceId('Microsoft.Network/virtualNetworks', variables('virtualMainNetworkName'))]",
     "subnetRef": "[concat(variables('vnetId'), '/subnets/', variables('virtualMainSubnetName'))]",
