@@ -213,7 +213,7 @@
     },
     {
       "comments": "The Master VM",
-      "apiVersion": "2015-05-01-preview",
+      "apiVersion": "2017-12-01",
       "type": "Microsoft.Compute/virtualMachines",
       "name": "[parameters('masterVMName')]",
       "location": "[resourceGroup().location]",
@@ -307,7 +307,7 @@
     },
     {
       "comments": "The worker nodes",
-      "apiVersion": "2015-05-01-preview",
+      "apiVersion": "2017-12-01",
       "type": "Microsoft.Compute/virtualMachines",
       "name": "[concat(parameters('workerVMName'), '0', copyindex(1))]",
       "location": "[resourceGroup().location]",
