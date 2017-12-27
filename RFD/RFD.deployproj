@@ -33,6 +33,9 @@
       <Visible>False</Visible>
     </None>
     <None Include="DeployTemplate.ps1" />
+    <None Include="multipleVMs.json" />
+    <None Include="openwbVMs.json" />
+    <None Include="openwbVMs.parameters.json" />
   </ItemGroup>
   <Target Name="GetReferenceAssemblyPaths" />
 </Project>

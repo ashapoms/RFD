@@ -2,23 +2,38 @@
   "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
   "contentVersion": "1.0.0.0",
   "parameters": {
-    "dnsName": {
-      "value": "ashapoms201"
-    },
-    "newStorageAccountName": {
-      "value": "ashapomssa201"
-    },
     "adminUsername": {
       "value": "azureadmin"
     },
     "adminPassword": {
       "value": "P@ssw0rd!@#$%"
     },
-    "vmSize": {
+    "dnsName": {
+      "value": "rfd-master"
+    },
+    "masterVMName": {
+      "value": "rfd-master"
+    },
+    "masterVMSize": {
+      "value": "Standard_D1"
+    },
+    "workerVMName": {
+      "value": "rfd-worker"
+    },
+    "workerVMSize": {
       "value": "Standard_D1"
     },
     "scaleNumber": {
       "value": 2
+    },
+    "storageAccountType": {
+      "value": "Standard_LRS"
+    },
+    "templateBaseUrl": {
+      "value": "https://raw.githubusercontent.com/ashapoms/RFD/master/RFD"
+    },
+    "publicIPAddressType": {
+      "value": "Static"
     }
   }
 }

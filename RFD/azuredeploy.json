@@ -2,31 +2,34 @@
   "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
   "contentVersion": "1.0.0.0",
   "parameters": {
-    "dnsName": {
-      "type": "string",
-      "metadata": {
-        "description": "Unique public dns name where the master node will be exposed"
-      }
-    },
-    "newStorageAccountName": {
-      "type": "string",
-      "metadata": {
-        "description": "Unique DNS Name for the Storage Account where the Virtual Machine's disks will be placed."
-      }
-    },
     "adminUsername": {
       "type": "string",
+      "defaultValue": "azureadmin",
       "metadata": {
-        "description": "User name for the Virtual Machine."
+        "description": "The name of the administrator account of the new VMs"
       }
     },
     "adminPassword": {
       "type": "securestring",
       "metadata": {
-        "description": "Admin password"
+        "description": "The password for the administrator account of the new VMs"
       }
     },
-    "vmSize": {
+    "dnsName": {
+      "type": "string",
+      "defaultValue": "rfd-master",
+      "metadata": {
+        "description": "Unique public dns name where the master node will be exposed"
+      }
+    },
+    "masterVMName": {
+      "type": "string",
+      "defaultValue": "rfd-master",
+      "metadata": {
+        "description": "The name of the Master VM"
+      }
+    },
+    "masterVMSize": {
       "type": "string",
       "defaultValue": "Standard_D1",
       "allowedValues": [
@@ -36,14 +39,66 @@
         "Standard_D4"
       ],
       "metadata": {
-        "description": "Size of the nodes."
+        "description": "The size of the Master VM"
+      }
+    },
+    "workerVMName": {
+      "type": "string",
+      "defaultValue": "rfd-worker",
+      "metadata": {
+        "description": "The base name of the worker nodes"
+      }
+    },
+    "workerVMSize": {
+      "type": "string",
+      "defaultValue": "Standard_D1",
+      "allowedValues": [
+        "Standard_D1",
+        "Standard_D2",
+        "Standard_D3",
+        "Standard_D4"
+      ],
+      "metadata": {
+        "description": "The size of the worker nodes"
       }
     },
     "scaleNumber": {
       "type": "int",
       "defaultValue": 2,
       "metadata": {
-        "description": "This template create N worker node. Use scaleNumber to specify that N."
+        "description": "This template creates N worker nodes. Use scaleNumber to specify that N"
+      }
+    },
+    "storageAccountType": {
+      "type": "string",
+      "defaultValue": "Standard_LRS",
+      "allowedValues": [
+        "Standard_LRS",
+        "Standard_GRS",
+        "Standard_RAGRS",
+        "Standard_ZRS",
+        "Premium_LRS"
+      ],
+      "metadata": {
+        "description": "Type of replication for storage account"
+      }
+    },
+    "templateBaseUrl": {
+      "type": "string",
+      "defaultValue": "https://raw.githubusercontent.com/ashapoms/RFD/master/RFD",
+      "metadata": {
+        "description": "The location of all artifacts"
+      }
+    },
+    "publicIPAddressType": {
+      "type": "string",
+      "defaultValue": "Static",
+      "allowedValues": [
+        "Static",
+        "Dynamic"
+      ],
+      "metadata": {
+        "description": "Public IP Address allocation method"
       }
     }
   },
@@ -53,19 +108,18 @@
     "ubuntuOSVersion": "6.6",
     "vmStorageAccountContainerName": "vhd",
     "OSDiskName": "osdisk",
-    "publicIPAddressType": "Dynamic",
-    "publicIPAddressName": "publicips",
-    "masterVMName": "master",
-    "workerVMName": "worker",
-    "nicName": "nic",
+    "masterVMNicName": "[concat(parameters('masterVMName'), '-nic01')]",
+    "workerVMNicName": "[concat(parameters('workerVMName'), '-nic')]",
+    "virtualMainNetworkName": "rfd-cluster",
+    "virtualMainSubnetName": "dse",
     "networkSettings": {
-      "virtualNetworkName": "virtualnetwork",
+      "virtualNetworkName": "[variables('virtualMainNetworkName')]",
       "addressPrefix": "10.0.0.0/16",
       "subnet": {
-        "dse": {
-          "name": "dse",
+        "mainSubnet": {
+          "name": "[variables('virtualMainSubnetName')]",
           "prefix": "10.0.0.0/24",
-          "vnet": "virtualnetwork"
+          "vnet": "[variables('virtualMainNetworkName')]"
         }
       },
       "statics": {
@@ -76,27 +130,29 @@
         "master": "10.0.0.254"
       }
     },
-    "vnetID": "[resourceId('Microsoft.Network/virtualNetworks',variables('networkSettings').virtualNetworkName)]",
-    "subnetRef": "[concat(variables('vnetID'),'/subnets/',variables('networkSettings').subnet.dse.name)]",
-    "sshKeyPath": "[concat('/home/',parameters('adminUsername'),'/.ssh/authorized_keys')]",
-    "templateBaseUrl": "https://raw.githubusercontent.com/ashapoms/RFD/master/RFD",
-    "installationCLI": "[concat('sh azuredeploy.sh ', variables('masterVMName'), ' ', variables('networkSettings').statics.master, ' ', variables('workerVMName'), ' ', variables('networkSettings').statics.workerRange.base, ' ', variables('networkSettings').statics.workerRange.start, ' ', parameters('scaleNumber'), ' ', parameters('adminUsername'), ' ', parameters('adminPassword'), ' ', variables('templateBaseUrl'))]",
-    "storageAccountType": "Standard_LRS"
+    "storageAccountName": "[concat(uniquestring(resourceGroup().id), 'sa01')]",
+    "publicIPAddressName": "[concat(parameters('masterVMName'), '-ip01')]",
+    "vnetId": "[resourceId('Microsoft.Network/virtualNetworks', variables('virtualMainNetworkName'))]",
+    "subnetRef": "[concat(variables('vnetId'), '/subnets/', variables('virtualMainSubnetName'))]",
+    "sshKeyPath": "[concat('/home/', parameters('adminUsername'), '/.ssh/authorized_keys')]",
+    "installationCli": "[concat('sh azuredeploy.sh ', parameters('masterVMName'), ' ', variables('networkSettings').statics.master, ' ', parameters('workerVMName'), ' ', variables('networkSettings').statics.workerRange.base, ' ', variables('networkSettings').statics.workerRange.start, ' ', parameters('scaleNumber'), ' ', parameters('adminUsername'), ' ', parameters('adminPassword'), ' ', parameters('templateBaseUrl'))]"
   },
   "resources": [
     {
+      "comments": "The storage account for VMs",
       "type": "Microsoft.Storage/storageAccounts",
-      "name": "[parameters('newStorageAccountName')]",
+      "name": "[variables('storageAccountName')]",
       "apiVersion": "2015-05-01-preview",
       "location": "[resourceGroup().location]",
       "properties": {
-        "accountType": "[variables('storageAccountType')]"
+        "accountType": "[parameters('storageAccountType')]"
       }
     },
     {
+      "comments": "The virtual network for the cluster",
       "apiVersion": "2015-05-01-preview",
       "type": "Microsoft.Network/virtualNetworks",
-      "name": "[variables('networkSettings').virtualNetworkName]",
+      "name": "[variables('virtualMainNetworkName')]",
       "location": "[resourceGroup().location]",
       "properties": {
         "addressSpace": {
@@ -106,36 +162,36 @@
         },
         "subnets": [
           {
-            "name": "[variables('networkSettings').subnet.dse.name]",
+            "name": "[variables('virtualMainSubnetName')]",
             "properties": {
-              "addressPrefix": "[variables('networkSettings').subnet.dse.prefix]"
+              "addressPrefix": "[variables('networkSettings').subnet.mainSubnet.prefix]"
             }
           }
         ]
       }
     },
     {
+      "comments": "Public IP Address for the Master VM",
       "type": "Microsoft.Network/publicIPAddresses",
       "apiVersion": "2015-05-01-preview",
       "name": "[variables('publicIPAddressName')]",
       "location": "[resourceGroup().location]",
-      "dependsOn": [
-        "[concat('Microsoft.Compute/virtualMachines/', variables('masterVMName'))]"
-      ],
       "properties": {
-        "publicIPAllocationMethod": "[variables('publicIPAddressType')]",
+        "publicIPAllocationMethod": "[parameters('publicIPAddressType')]",
         "dnsSettings": {
           "domainNameLabel": "[parameters('dnsName')]"
         }
       }
     },
     {
+      "comments": "The network interface for the Master VM",
       "apiVersion": "2015-05-01-preview",
       "type": "Microsoft.Network/networkInterfaces",
-      "name": "[variables('nicName')]",
+      "name": "[variables('masterVMNicName')]",
       "location": "[resourceGroup().location]",
       "dependsOn": [
-        "[concat('Microsoft.Network/virtualNetworks/', variables('networkSettings').virtualNetworkName)]"
+        "[concat('Microsoft.Network/publicIPAddresses/', variables('publicIPAddressName'))]",
+        "[concat('Microsoft.Network/virtualNetworks/', variables('virtualMainNetworkName'))]"
       ],
       "properties": {
         "ipConfigurations": [
@@ -144,6 +200,9 @@
             "properties": {
               "privateIPAllocationMethod": "Static",
               "privateIPAddress": "[variables('networkSettings').statics.master]",
+              "publicIPAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIPAddressName'))]"
+              },
               "subnet": {
                 "id": "[variables('subnetRef')]"
               }
@@ -153,64 +212,20 @@
       }
     },
     {
-      "apiVersion": "2015-01-01",
-      "type": "Microsoft.Resources/deployments",
-      "name": "updateMasterNic",
-      "dependsOn": [
-        "[concat('Microsoft.Network/publicIPAddresses/', variables('publicIPAddressName'))]"
-      ],
-      "properties": {
-        "mode": "Incremental",
-        "parameters": {},
-        "template": {
-          "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
-          "contentVersion": "1.0.0.0",
-          "parameters": {},
-          "variables": {},
-          "resources": [
-            {
-              "apiVersion": "2015-05-01-preview",
-              "name": "[variables('nicName')]",
-              "location": "[resourceGroup().location]",
-              "type": "Microsoft.Network/networkInterfaces",
-              "properties": {
-                "ipConfigurations": [
-                  {
-                    "name": "[reference('nic').ipConfigurations[0].name]",
-                    "properties": {
-                      "privateIPAllocationMethod": "[reference('nic').ipConfigurations[0].properties.privateIPAllocationMethod]",
-                      "privateIPAddress": "[reference('nic').ipConfigurations[0].properties.privateIPAddress]",
-                      "subnet": {
-                        "id": "[reference('nic').ipConfigurations[0].properties.subnet.id]"
-                      },
-                      "publicIPAddress": {
-                        "id": "[resourceId('Microsoft.Network/publicIPAddresses','publicips')]"
-                      }
-                    }
-                  }
-                ]
-              } 
-            }
-          ],
-          "outputs": {}
-        }
-      }
-    },
-    {
+      "comments": "The Master VM",
       "apiVersion": "2015-05-01-preview",
       "type": "Microsoft.Compute/virtualMachines",
-      "name": "[variables('masterVMName')]",
+      "name": "[parameters('masterVMName')]",
       "location": "[resourceGroup().location]",
       "dependsOn": [
-        "[concat('Microsoft.Storage/storageAccounts/', parameters('newStorageAccountName'))]",
-        "[concat('Microsoft.Network/networkInterfaces/', variables('nicName'))]"
+        "[concat('Microsoft.Network/networkInterfaces/', variables('masterVMNicName'))]"
       ],
       "properties": {
         "hardwareProfile": {
-          "vmSize": "[parameters('vmSize')]"
+          "vmSize": "[parameters('masterVMSize')]"
         },
         "osProfile": {
-          "computerName": "[variables('masterVMName')]",
+          "computerName": "[parameters('masterVMName')]",
           "adminUsername": "[parameters('adminUsername')]",
           "adminPassword": "[parameters('adminPassword')]"
         },
@@ -222,9 +237,8 @@
             "version": "latest"
           },
           "osDisk": {
-            "name": "osdisk",
-            "vhd": {
-              "uri": "[concat('http://',parameters('newStorageAccountName'),'.blob.core.windows.net/',variables('vmStorageAccountContainerName'),'/',variables('OSDiskName'),variables('masterVMName'),'.vhd')]"
+            "managedDisk": {
+              "storageAccountType": "Standard_LRS"
             },
             "caching": "ReadWrite",
             "createOption": "FromImage"
@@ -233,19 +247,20 @@
         "networkProfile": {
           "networkInterfaces": [
             {
-              "id": "[resourceId('Microsoft.Network/networkInterfaces',variables('nicName'))]"
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('masterVMNicName'))]"
             }
           ]
         }
       }
     },
     {
+      "comments": "The custom script for the Master VM",
       "apiVersion": "2015-05-01-preview",
       "type": "Microsoft.Compute/virtualMachines/extensions",
-      "name": "[concat(variables('masterVMName'), '/Installation')]",
+      "name": "[concat(parameters('masterVMName'), '/Installation')]",
       "location": "[resourceGroup().location]",
       "dependsOn": [
-        "[concat('Microsoft.Compute/virtualMachines/', variables('masterVMName'))]"
+        "[concat('Microsoft.Compute/virtualMachines/', parameters('masterVMName'))]"
       ],
       "properties": {
         "publisher": "Microsoft.Azure.Extensions",
@@ -254,24 +269,25 @@
         "autoUpgradeMinorVersion": true,
         "settings": {
           "fileUris": [
-            "[concat(variables('templateBaseUrl'), '/azuredeploy.sh')]"
+            "[concat(parameters('templateBaseUrl'), '/azuredeploy.sh')]"
           ]
         },
         "protectedSettings": {
-          "commandToExecute": "[variables('installationCLI')]"
+          "commandToExecute": "[variables('installationCli')]"
         }
       }
     },
     {
+      "comments": "The network interfaces for the worker nodes",
       "apiVersion": "2015-05-01-preview",
       "type": "Microsoft.Network/networkInterfaces",
-      "name": "[concat(variables('nicName'), 'worker', copyindex())]",
+      "name": "[concat(variables('workerVMNicName'), '0', copyindex(1))]",
       "location": "[resourceGroup().location]",
       "dependsOn": [
-        "[concat('Microsoft.Network/virtualNetworks/', variables('networkSettings').virtualNetworkName)]"
+        "[concat('Microsoft.Network/virtualNetworks/', variables('virtualMainNetworkName'))]"
       ],
       "copy": {
-        "name": "foo",
+        "name": "workerNicLoop",
         "count": "[parameters('scaleNumber')]"
       },
       "properties": {
@@ -290,24 +306,24 @@
       }
     },
     {
+      "comments": "The worker nodes",
       "apiVersion": "2015-05-01-preview",
       "type": "Microsoft.Compute/virtualMachines",
-      "name": "[concat(variables('workerVMName'), copyindex())]",
+      "name": "[concat(parameters('workerVMName'), '0', copyindex(1))]",
       "location": "[resourceGroup().location]",
       "dependsOn": [
-        "[concat('Microsoft.Storage/storageAccounts/', parameters('newStorageAccountName'))]",
-        "[concat('Microsoft.Network/networkInterfaces/', variables('nicName'), 'worker', copyindex())]"
+        "[concat('Microsoft.Network/networkInterfaces/', variables('workerVMNicName'), '0', copyindex(1))]"
       ],
       "copy": {
-        "name": "foo",
+        "name": "workerVMLoop",
         "count": "[parameters('scaleNumber')]"
       },
       "properties": {
         "hardwareProfile": {
-          "vmSize": "[parameters('vmSize')]"
+          "vmSize": "[parameters('workerVMSize')]"
         },
         "osProfile": {
-          "computerName": "[concat(variables('workerVMName'), copyindex())]",
+          "computerName": "[concat(parameters('workerVMName'), '0', copyindex(1))]",
           "adminUsername": "[parameters('adminUsername')]",
           "adminPassword": "[parameters('adminPassword')]"
         },
@@ -319,9 +335,8 @@
             "version": "latest"
           },
           "osDisk": {
-            "name": "osdisk",
-            "vhd": {
-              "uri": "[concat('http://',parameters('newStorageAccountName'),'.blob.core.windows.net/',variables('vmStorageAccountContainerName'),'/',variables('OSDiskName'),variables('workerVMName'),copyindex(),'.vhd')]"
+            "managedDisk": {
+              "storageAccountType": "Standard_LRS"
             },
             "caching": "ReadWrite",
             "createOption": "FromImage"
@@ -330,7 +345,7 @@
         "networkProfile": {
           "networkInterfaces": [
             {
-              "id": "[resourceId('Microsoft.Network/networkInterfaces',concat(variables('nicName'), 'worker', copyindex()))]"
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', concat(variables('workerVMNicName'), '0', copyindex(1)))]"
             }
           ]
         }
@@ -342,9 +357,9 @@
       "value": "[reference(variables('publicIPAddressName')).dnsSettings.fqdn]",
       "type": "string"
     },
-    "networkInterface": {
-      "type": "string",
-      "value": "[reference(variables('publicIPAddressName')).ipAddress]"
+    "masterIPAddress": {
+      "type": "object",
+      "value": "[reference(concat(variables('masterVMNicName'))).ipConfigurations[0].properties.publicIPAddress]"
     }
   }
 }

@@ -1,0 +1,372 @@
+﻿{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "_artifactsLocation": {
+      "type": "string",
+      "metadata": {
+        "description": "Change this value to your repo name if deploying from a fork"
+      },
+      "defaultValue": "https://raw.githubusercontent.com/ashapoms/open-wb/master/open-wb-infra/open-wb-infra/"
+    },
+    "adminUsername": {
+      "type": "string",
+      "metadata": {
+        "description": "The name of the administrator account of the new VMs"
+      },
+      "defaultValue": "wbadmin"
+    },
+    "adminPassword": {
+      "type": "securestring",
+      "metadata": {
+        "description": "The password for the administrator account of the new VMs"
+      }
+    },
+    "sqlMachineName": {
+      "type": "string",
+      "metadata": {
+        "description": "The name of the SQL Server VM"
+      }
+    },
+    "sqlMachineSize": {
+      "type": "string",
+      "metadata": {
+        "description": "The size of the SQL Server VM"
+      }
+    },
+    "virtualNetworkName": {
+      "type": "string",
+      "metadata": {
+        "description": "The virtual network for all VMs"
+      }
+    },
+    "virtualNetworkAddressRange": {
+      "type": "string",
+      "metadata": {
+        "description": "The address range of the new VNET in CIDR format"
+      }
+    },
+    "virtualSubnetAddressRange": {
+      "type": "string",
+      "metadata": {
+        "description": "The address range of the main subnet created in the new VNET"
+      }
+    },
+    "numberOfSqlVMs": {
+      "type": "int",
+      "metadata": {
+        "description": "Number of SQL Servers to deploy"
+      },
+      "defaultValue": 2
+    },
+    "sqlConnectivityType": {
+      "type": "string",
+      "metadata": {
+        "description": "SQL Server Connectivity Type: Local (inside VM only); Private (within Virtual Network); Public (Internet)"
+      },
+      "defaultValue": "Private"
+    },
+    "sqlPortNumber": {
+      "type": "int",
+      "metadata": {
+        "description": "SQL Server port number"
+      },
+      "defaultValue": 1433
+    },
+    "sqlStorageDisksCount": {
+      "type": "int",
+      "metadata": {
+        "description": "The number of SQL Server data disks"
+      },
+      "defaultValue": 1
+    },
+    "sqlStorageWorkloadType": {
+      "type": "string",
+      "metadata": {
+        "description": "SQL Server workload type: GENERAL (general workload); DW (data warehousing workload); OLTP (transactional processing workload)"
+      },
+      "allowedValues": [
+        "GENERAL",
+        "OLTP",
+        "DW"
+      ],
+      "defaultValue": "GENERAL"
+    },
+    "sqlStorageDisksConfigurationType": {
+      "type": "string",
+      "metadata": {
+        "description": "SQL Server disk configuration type"
+      },
+      "defaultValue": "NEW"
+    },
+    "sqlStorageStartingDeviceId": {
+      "type": "int",
+      "metadata": {
+        "description": "SQL Server starting device ID"
+      },
+      "defaultValue": 2
+    },
+    "sqlAuthenticationLogin": {
+      "type": "string",
+      "metadata": {
+        "description": "SQL Server database administrator login"
+      },
+      "defaultValue": "wbadmin"
+    },
+    "sqlAuthenticationPassword": {
+      "type": "securestring"
+    },
+    "rServicesEnabled": {
+      "type": "string",
+      "metadata": {
+        "description": "Enables SQL Server R Services. For SQL Server 2016 Enterprise only"
+      },
+      "defaultValue": "false"
+    }
+  },
+  "variables": {
+    "mainSubnetName": "[concat(parameters('virtualNetworkName'), '-mainsubnet01')]",
+    "vnetId": "[resourceId(resourceGroup().name, 'Microsoft.Network/virtualNetworks', parameters('virtualNetworkName'))]",
+    "mainSubnetRef": "[concat(variables('vnetId'), '/subnets/', variables('mainSubnetName'))]",
+    "sqlMachinePublicIpName": "[concat(parameters('sqlMachineName'), '-ip')]",
+    "sqlMachineNsgName": "[concat(parameters('sqlMachineName'), '-nsg')]",
+    "sqlMachineNicName": "[concat(parameters('sqlMachineName'), '-nic')]",
+    "sqlAvailabilitySetName": "sql-ha-set"
+  },
+  "resources": [
+    {
+      "comments": "Windows Server 2012 R2 Datacenter Edition with SQL Server 2012 SP3 Enterprise Edition, two VMs for DB mirroring ",
+      "name": "[concat(parameters('sqlMachineName'), '0', copyIndex(1))]",
+      "type": "Microsoft.Compute/virtualMachines",
+      "apiVersion": "2016-04-30-preview",
+      "location": "[resourceGroup().location]",
+      "copy": {
+        "name": "sqlVMLoop",
+        "count": "[parameters('numberOfSqlVMs')]"
+      },
+      "dependsOn": [
+        "[concat('Microsoft.Network/networkInterfaces/', concat(variables('sqlMachineNicName'), '0', copyIndex(1)))]",
+        "[concat('Microsoft.Compute/availabilitySets/', variables('sqlAvailabilitySetName'))]"
+      ],
+      "properties": {
+        "availabilitySet": {
+          "id": "[resourceId('Microsoft.Compute/availabilitySets', variables('sqlAvailabilitySetName'))]"
+        },
+        "osProfile": {
+          "computerName": "[concat(parameters('sqlMachineName'), '0', copyIndex(1))]",
+          "adminUsername": "[parameters('adminUsername')]",
+          "adminPassword": "[parameters('adminPassword')]",
+          "windowsConfiguration": {
+            "provisionVmAgent": "true"
+          }
+        },
+        "hardwareProfile": {
+          "vmSize": "[parameters('sqlMachineSize')]"
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "MicrosoftSQLServer",
+            "offer": "SQL2012SP3-WS2012R2",
+            "sku": "Enterprise",
+            "version": "latest"
+          },
+          "osDisk": {
+            "createOption": "FromImage",
+            "managedDisk": {
+              "storageAccountType": "Standard_LRS"
+            }
+          },
+          "dataDisks": [
+            {
+              "name": "[concat(parameters('sqlMachineName'), '0', copyIndex(1), '-disk-1')]",
+              "createOption": "Empty",
+              "lun": 0,
+              "diskSizeGB": "1023",
+              "caching": "ReadOnly",
+              "managedDisk": {
+                "storageAccountType": "Standard_LRS"
+              }
+            }
+          ]
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', concat(variables('sqlMachineNicName'), '0', copyIndex(1)))]"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "apiVersion": "2015-06-15",
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "name": "[concat(parameters('sqlMachineName'), '0', copyIndex(1), '/SqlIaasExtension')]",
+      "location": "[resourceGroup().location]",
+      "copy": {
+        "name": "sqlExtLoop",
+        "count": "[parameters('numberOfSqlVMs')]"
+      },
+      "dependsOn": [
+        "[concat('Microsoft.Compute/virtualMachines/', concat(parameters('sqlMachineName'), '0', copyIndex(1)))]"
+      ],
+      "properties": {
+        "type": "SqlIaaSAgent",
+        "publisher": "Microsoft.SqlServer.Management",
+        "typeHandlerVersion": "1.2",
+        "autoUpgradeMinorVersion": "true",
+        "settings": {
+          "AutoTelemetrySettings": {
+            "Region": "[resourceGroup().location]"
+          },
+          "AutoPatchingSettings": {
+            "PatchCategory": "WindowsMandatoryUpdates",
+            "Enable": false,
+            "DayOfWeek": "Sunday",
+            "MaintenanceWindowStartingHour": "2",
+            "MaintenanceWindowDuration": "60"
+          },
+          "KeyVaultCredentialSettings": {
+            "Enable": false,
+            "CredentialName": ""
+          },
+          "ServerConfigurationsManagementSettings": {
+            "SQLConnectivityUpdateSettings": {
+              "ConnectivityType": "[parameters('sqlConnectivityType')]",
+              "Port": "[parameters('sqlPortNumber')]"
+            },
+            "SQLWorkloadTypeUpdateSettings": {
+              "SQLWorkloadType": "[parameters('sqlStorageWorkloadType')]"
+            },
+            "SQLStorageUpdateSettings": {
+              "DiskCount": "[parameters('sqlStorageDisksCount')]",
+              "NumberOfColumns": "[parameters('sqlStorageDisksCount')]",
+              "StartingDeviceID": "[parameters('sqlStorageStartingDeviceId')]",
+              "DiskConfigurationType": "[parameters('sqlStorageDisksConfigurationType')]"
+            },
+            "AdditionalFeaturesServerConfigurations": {
+              "IsRServicesEnabled": "[parameters('rServicesEnabled')]"
+            }
+          }
+        },
+        "protectedSettings": {
+          "SQLAuthUpdateUserName": "[parameters('sqlAuthenticationLogin')]",
+          "SQLAuthUpdatePassword": "[parameters('sqlAuthenticationPassword')]"
+        }
+      }
+    },
+    {
+      "comments": "The availability set for SQL Server instances",
+      "type": "Microsoft.Compute/availabilitySets",
+      "name": "[variables('sqlAvailabilitySetName')]",
+      "apiVersion": "2016-04-30-preview",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "platformFaultDomainCount": "2",
+        "platformUpdateDomainCount": "2",
+        "managed": "true"
+      }
+    },
+    {
+      "comments": "The virtual network",
+      "name": "[parameters('virtualNetworkName')]",
+      "type": "Microsoft.Network/virtualNetworks",
+      "apiVersion": "2016-12-01",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": [
+            "[parameters('virtualNetworkAddressRange')]"
+          ]
+        },
+        "subnets": [
+          {
+            "name": "[variables('mainSubnetName')]",
+            "properties": {
+              "addressPrefix": "[parameters('virtualSubnetAddressRange')]"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "comments": "The public IP address for the SQL Server VM",
+      "name": "[concat(variables('sqlMachinePublicIpName'), '0', copyIndex(1))]",
+      "type": "Microsoft.Network/publicIPAddresses",
+      "apiVersion": "2016-09-01",
+      "location": "[resourceGroup().location]",
+      "copy": {
+        "name": "sqlIpLoop",
+        "count": "[parameters('numberOfSqlVMs')]"
+      },
+      "properties": {
+        "publicIPAllocationMethod": "Dynamic"
+      }
+    },
+    {
+      "comments": "The network security group for the SQL Server VM",
+      "name": "[concat(variables('sqlMachineNsgName'), '0', copyIndex(1))]",
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "apiVersion": "2016-09-01",
+      "location": "[resourceGroup().location]",
+      "copy": {
+        "name": "sqlNsgLoop",
+        "count": "[parameters('numberOfSqlVMs')]"
+      },
+      "properties": {
+        "securityRules": [
+          {
+            "name": "default-allow-rdp",
+            "properties": {
+              "priority": 1000,
+              "sourceAddressPrefix": "*",
+              "protocol": "Tcp",
+              "destinationPortRange": "3389",
+              "access": "Allow",
+              "direction": "Inbound",
+              "sourcePortRange": "*",
+              "destinationAddressPrefix": "*"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "comments": "The network interface for the SQL Server VM",
+      "name": "[concat(variables('sqlMachineNicName'), '0', copyIndex(1))]",
+      "type": "Microsoft.Network/networkInterfaces",
+      "apiVersion": "2016-09-01",
+      "location": "[resourceGroup().location]",
+      "copy": {
+        "name": "sqlNicLoop",
+        "count": "[parameters('numberOfSqlVMs')]"
+      },
+      "dependsOn": [
+        "[concat('Microsoft.Network/virtualNetworks/', parameters('virtualNetworkName'))]",
+        "[concat('Microsoft.Network/publicIPAddresses/', concat(variables('sqlMachinePublicIpName'), '0', copyIndex(1)))]",
+        "[concat('Microsoft.Network/networkSecurityGroups/', concat(variables('sqlMachineNsgName'), '0', copyIndex(1)))]"
+      ],
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig1",
+            "properties": {
+              "subnet": {
+                "id": "[variables('mainSubnetRef')]"
+              },
+              "privateIPAllocationMethod": "Dynamic",
+              "publicIpAddress": {
+                "id": "[resourceId(resourceGroup().name, 'Microsoft.Network/publicIPAddresses', concat(variables('sqlMachinePublicIpName'), '0', copyIndex(1)))]"
+              }
+            }
+          }
+        ],
+        "networkSecurityGroup": {
+          "id": "[resourceId(resourceGroup().name, 'Microsoft.Network/networkSecurityGroups', concat(variables('sqlMachineNsgName'), '0', copyIndex(1)))]"
+        }
+      }
+    }
+  ],
+  "outputs": {
+  }
+}
