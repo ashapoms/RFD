@@ -110,6 +110,7 @@
     "OSDiskName": "osdisk",
     "masterVMNicName": "[concat(parameters('masterVMName'), '-nic01')]",
     "workerVMNicName": "[concat(parameters('workerVMName'), '-nic')]",
+    "masterNsgName": "[concat(parameters('masterVMName'), '-nsg01')]",
     "virtualMainNetworkName": "rfd-cluster",
     "virtualMainSubnetName": "dse",
     "networkSettings": {
@@ -184,6 +185,30 @@
       }
     },
     {
+      "comments": "The network security group for the Master VM",
+      "name": "[variables('masterNsgName')]",
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "apiVersion": "2016-09-01",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "securityRules": [
+          {
+            "name": "default-allow-ssh",
+            "properties": {
+              "priority": 1000,
+              "sourceAddressPrefix": "*",
+              "protocol": "Tcp",
+              "destinationPortRange": "22",
+              "access": "Allow",
+              "direction": "Inbound",
+              "sourcePortRange": "*",
+              "destinationAddressPrefix": "*"
+            }
+          }
+        ]
+      }
+    },
+    {
       "comments": "The network interface for the Master VM",
       "apiVersion": "2015-05-01-preview",
       "type": "Microsoft.Network/networkInterfaces",
@@ -191,7 +216,8 @@
       "location": "[resourceGroup().location]",
       "dependsOn": [
         "[concat('Microsoft.Network/publicIPAddresses/', variables('publicIPAddressName'))]",
-        "[concat('Microsoft.Network/virtualNetworks/', variables('virtualMainNetworkName'))]"
+        "[concat('Microsoft.Network/virtualNetworks/', variables('virtualMainNetworkName'))]",
+        "[concat('Microsoft.Network/networkSecurityGroups/', variables('masterNsgName'))]"
       ],
       "properties": {
         "ipConfigurations": [
@@ -208,7 +234,10 @@
               }
             }
           }
-        ]
+        ],
+        "networkSecurityGroup": {
+          "id": "[resourceId(resourceGroup().name, 'Microsoft.Network/networkSecurityGroups', variables('masterNsgName'))]"
+        }
       }
     },
     {
@@ -255,7 +284,7 @@
     },
     {
       "comments": "The custom script for the Master VM",
-      "apiVersion": "2015-05-01-preview",
+      "apiVersion": "2017-12-01",
       "type": "Microsoft.Compute/virtualMachines/extensions",
       "name": "[concat(parameters('masterVMName'), '/Installation')]",
       "location": "[resourceGroup().location]",
@@ -264,7 +293,7 @@
       ],
       "properties": {
         "publisher": "Microsoft.Azure.Extensions",
-        "type": "CustomScript",
+        "type": "CustomScriptExtension",
         "typeHandlerVersion": "2.0",
         "autoUpgradeMinorVersion": true,
         "settings": {
