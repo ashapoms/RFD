@@ -8,10 +8,8 @@
  ### Requirements
 [Azure PowerShell](https://docs.microsoft.com/en-us/powershell/azure/overview?view=azurermps-5.1.1) modules must be installed in order to run the script.
  ### Parameters description 
- **ResourceGroupLocation**
- Sets Azure region for the deployment. Default region is 'westeurope'.
- **DeployIndex**
- Sets a number for the deployment iteration.
+ * **ResourceGroupLocation** Sets Azure region for the deployment. Default region is 'westeurope'.
+ * **DeployIndex** Sets a number for the deployment iteration.
  **ResourceGroupPrefix**
  Used to form resource group name and deployment name.  
  **AzureUserName**
