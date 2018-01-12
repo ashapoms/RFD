@@ -17,9 +17,9 @@
     },
     "dnsName": {
       "type": "string",
-      "defaultValue": "rfd-master",
+      "defaultValue": "rfd",
       "metadata": {
-        "description": "Unique public dns name where the master node will be exposed"
+        "description": "Prefix for dns name where the master node will be exposed"
       }
     },
     "masterVMName": {
@@ -103,7 +103,7 @@
     }
   },
   "variables": {
-    "dnsPublicName": "[concat(parameters('dnsName'), uniquestring(resourceGroup().id))]",
+    "dnsPublicName": "[concat(parameters('dnsName'), '-', uniquestring(resourceGroup().id))]",
     "imagePublisher": "OpenLogic",
     "imageOffer": "CentOS",
     "ubuntuOSVersion": "6.6",
