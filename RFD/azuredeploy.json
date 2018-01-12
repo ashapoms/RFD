@@ -103,6 +103,7 @@
     }
   },
   "variables": {
+    "dnsPublicName": "[concat(parameters('dnsName'), uniquestring(resourceGroup().id))]",
     "imagePublisher": "OpenLogic",
     "imageOffer": "CentOS",
     "ubuntuOSVersion": "6.6",
@@ -180,7 +181,7 @@
       "properties": {
         "publicIPAllocationMethod": "[parameters('publicIPAddressType')]",
         "dnsSettings": {
-          "domainNameLabel": "[parameters('dnsName')]"
+          "domainNameLabel": "[variables('dnsPublicName')]"
         }
       }
     },
